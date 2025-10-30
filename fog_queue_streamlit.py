@@ -139,21 +139,24 @@ with tab2:
         # --- Response time
         with col2:
             st.subheader("Response Time vs Jobs")
-            fig2, ax2 = plt.subplots(figsize=(6.5,4.2))
+            fig2, ax2 = plt.subplots(figsize=(6.5, 4.2))
             ax2.plot(jobs, T_hist, linewidth=2, label="Response time")
-            ax2.axhline(SLA, linestyle="--", label=f"SLA = {SLA:.1f}s")
+            ax2.axhline(SLA, color="tab:red", linestyle="--", label=f"SLA = {SLA:.1f}s")
             if J_sla > 0:
-                ax2.axvline(J_sla, linestyle=":", label=f"Max J within SLA ≈ {J_sla}")
+                ax2.axvline(J_sla, color="gray", linestyle=":", label=f"Max J within SLA ≈ {J_sla}")
+
             ax2.set_xlabel("Number of jobs (J)")
             ax2.set_ylabel("Response time (s)")
             ax2.legend()
             ax2.grid(True, linestyle="--", alpha=0.35)
-            # Optional: focus/zoom and use 2-step ticks
-            ax2.set_ylim(0, 10)                      # show only 0–10 s range
-            ax2.set_yticks(np.arange(0, 10.1, 2))    # ticks at 0,2,4,6,8,10
+
+            # --- Dynamic scaling & clean ticks ---
+            ymax = np.ceil(np.max(T_hist) / 2) * 2          # round up to even number
+            ax2.set_ylim(0, ymax)                           # dynamic upper limit
+            ax2.set_yticks(np.arange(0, ymax + 0.1, 2))     # ticks every 2 seconds
+            # --------------------------------------
+
             st.pyplot(fig2, clear_figure=True)
-            st.download_button("Download response-time plot (PNG)", data=fig_to_bytes(fig2),
-                               file_name="response_time_vs_jobs.png", mime="image/png")
 
         # --- Utilization
         st.subheader("Node Utilization (ρ)")
