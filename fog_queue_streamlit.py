@@ -1,4 +1,4 @@
-# Streamlit app: Queueing Theory Model for Fog Computing (R/Shiny parity)
+# Streamlit app: Queueing Theory Model for Fog Computing (R/Shiny parity + improved visualization)
 # Run: streamlit run fog_queue_streamlit.py
 
 import io
@@ -69,7 +69,7 @@ with st.sidebar:
         mu_D = st.number_input("μD (DS) Service rate of the Database Server", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
     with colB:
         mu_O = st.number_input("μO (OS) Service rate of the Output Server", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
-        mu_F = st.number_input("μF (FS) Service rate of every fog Server", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
+        mu_F = st.number_input("μF (FS) Service rate of every Fog Server", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
         mu_C = st.number_input("μC (CS) Service rate of every Client Server", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
 
     R = st.number_input("Processing servers R (PS)", min_value=1, max_value=200, value=10)
@@ -99,25 +99,20 @@ with tab2:
     if not run_sim:
         st.info("Adjust inputs in the sidebar and click **Calculate** to generate performance plots.")
     else:
-        # Build transition matrix (same topology/order as R/Shiny)
-        # Order: [ES, PS, DS, OS, CS, FS]
+        # Transition matrix (same as R/Shiny)
         T = np.array([
-            [0, 1, 0, 0, 0, 0],                                       # ES -> PS
-            [0, (1 - delta)*(1 - tau), delta, (1 - delta)*tau, 0, 0], # PS
-            [0, (1 - tau), 0, tau, 0, 0],                             # DS
-            [0, 0, 0, 0, 1, 0],                                       # OS -> CS
-            [0, 0, 0, 0, 0, 1],                                       # CS -> FS
-            [kappa, 0, 0, 0, (1 - kappa), 0],                         # FS -> ES or CS
+            [0, 1, 0, 0, 0, 0],
+            [0, (1 - delta)*(1 - tau), delta, (1 - delta)*tau, 0, 0],
+            [0, (1 - tau), 0, tau, 0, 0],
+            [0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 1],
+            [kappa, 0, 0, 0, (1 - kappa), 0],
         ], dtype=float)
 
         V = visit_ratios_from_T(T)
         m = np.array([1, R, 1, 1, M, N], dtype=float)
 
-        # --- R/Shiny parity: service-rate scaling ---
-        # R code:
-        # es_service_rate <- input$mu_es * 2
-        # ds_service_rate <- input$mu_ds * 3.5
-        # os_service_rate <- input$mu_os * 3.5
+        # Service-rate scaling to match R/Shiny
         mu = np.array([
             mu_E * 2.0,   # ES
             mu_P,         # PS
@@ -131,17 +126,17 @@ with tab2:
         X_hist, T_hist, R_hist, Q_hist = mva_schweitzer(J, V, D, m)
         jobs = np.arange(1, J + 1)
 
-        # Utilization ρ_k at final J; ROk analogue in R
-        util = (X_hist[-1] * V * D) / m
-        util = np.clip(util, 0.0, 1.0)
+        # Utilization and mean customers
+        util = np.clip((X_hist[-1] * V * D) / m, 0.0, 1.0)
+        Lk_final = Q_hist[-1]
 
-        # Mean customers per node (Lk) at final J; matches R m_cjn1$Lk
-        Lk_final = Q_hist[-1]  # Qn is mean number at each center for that population
-
-        # J within SLA (use last J satisfying T_hist <= SLA)
+        # Max J within SLA
         J_sla = int(np.max(jobs[T_hist <= SLA])) if np.any(T_hist <= SLA) else 0
 
-        # --- Throughput (R style: points + smooth + optional asymptotic line)
+        # ---------------------------
+        # Throughput evolution
+        # ---------------------------
+        col1, col2 = st.columns(2)
         with col1:
             st.subheader("Throughput evolution")
             fig1, ax1 = plt.subplots(figsize=(6.5, 4.2))
@@ -152,11 +147,10 @@ with tab2:
             # Black scatter points (measured)
             ax1.scatter(jobs, X_hist, color="black", s=15, label="Measured points")
 
-            # Dotted asymptotic limit line (max throughput)
+            # Dotted asymptotic limit line
             X_max = np.max(X_hist)
             ax1.axhline(X_max, color="gray", linestyle=":", linewidth=1.5, label="Asymptotic limit")
 
-            # Labels, grid, legend
             ax1.set_xlabel("# Jobs")
             ax1.set_ylabel("Throughput (jobs/time unit)")
             ax1.set_ylim(0, X_max * 1.1)
@@ -171,23 +165,20 @@ with tab2:
                 mime="image/png"
             )
 
-        # --- Response time (R: dashed red SLA + label) ---
+        # ---------------------------
+        # Response time
+        # ---------------------------
         with col2:
             st.subheader("Mean time evolution")
-            fig2, ax2 = plt.subplots(figsize=(6.5,4.2))
+            fig2, ax2 = plt.subplots(figsize=(6.5, 4.2))
             ax2.plot(jobs, T_hist, marker='o', markersize=3, linewidth=1.5, label="Mean time")
             ax2.axhline(SLA, linestyle="--", color="red", linewidth=2, label=f"SLA = {SLA:.1f}s")
 
-            # Add a small label near SLA line (left side)
-            try:
-                ax2.text(jobs[0], SLA, "SLA Limit", va="bottom", ha="left")
-            except Exception:
-                pass
+            # Label for SLA line
+            ax2.text(jobs[0], SLA, "SLA Limit", va="bottom", ha="left")
 
-            # Dynamic y-limit and 2-sec ticks (keeps curve visible; matches your desired ticks)
+            # Dynamic y-axis with 2-second ticks
             ymax = float(np.ceil(np.max(T_hist) / 2.0) * 2.0)
-            if ymax <= 0:
-                ymax = 2.0
             ax2.set_ylim(0, ymax)
             ax2.set_yticks(np.arange(0, ymax + 0.1, 2))
 
@@ -202,9 +193,11 @@ with tab2:
             st.download_button("Download response-time plot (PNG)", data=fig_to_bytes(fig2),
                                file_name="response_time_vs_jobs.png", mime="image/png")
 
-        # --- Mean customers per node (R: "Mean customers evolution") ---
+        # ---------------------------
+        # Mean customers
+        # ---------------------------
         st.subheader("Mean customers evolution")
-        fig_mc, ax_mc = plt.subplots(figsize=(13,4.2))
+        fig_mc, ax_mc = plt.subplots(figsize=(13, 4.2))
         ax_mc.bar(nodes, Lk_final)
         for i, val in enumerate(Lk_final):
             ax_mc.text(i, val + max(0.02 * np.max(Lk_final), 0.02), f"{val:.2f}", ha="center", va="bottom")
@@ -214,9 +207,11 @@ with tab2:
         st.download_button("Download mean-customers plot (PNG)", data=fig_to_bytes(fig_mc),
                            file_name="mean_customers.png", mime="image/png")
 
-        # --- Utilization (ROk in R) ---
+        # ---------------------------
+        # Utilization
+        # ---------------------------
         st.subheader("Node Usage")
-        fig3, ax3 = plt.subplots(figsize=(13,4.2))
+        fig3, ax3 = plt.subplots(figsize=(13, 4.2))
         ax3.bar(nodes, util)
         ax3.set_ylim(0, 1.05)
         for i, u in enumerate(util):
@@ -232,7 +227,6 @@ with tab3:
         st.info("Run a simulation to see the summary.")
     else:
         st.subheader("Summary (at final population J)")
-        # Use displayed (scaled) μ for consistency with R
         mu_used = np.array([mu_E*2.0, mu_P, mu_D*3.5, mu_O*3.5, mu_C, mu_F], dtype=float)
         df = pd.DataFrame({
             "Node": nodes,
