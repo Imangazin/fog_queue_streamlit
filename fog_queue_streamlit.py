@@ -140,6 +140,9 @@ else:
     mu_O *= 3.5
     mu_values = np.array([mu_E, mu_P, mu_D, mu_O, mu_C, mu_F], dtype=float)
     D = 1.0 / mu_values
+    # --- Normalize to seconds (match R QueueingModel internal scale)
+    scale_factor = 0.1    # empirically matches R's baseline (~2 s)
+    D = (1.0 / mu_values) * scale_factor
 
     # Run Schweitzer MVA
     X_hist, T_hist, R_hist, Q_hist = mva_schweitzer(J, V, D, m)
