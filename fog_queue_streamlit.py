@@ -99,132 +99,94 @@ with tab2:
     if not run_sim:
         st.info("Adjust inputs in the sidebar and click **Calculate** to generate performance plots.")
     else:
-        # Transition matrix (same as R/Shiny)
+        # Build transition matrix (same topology as the paper)
+        # Order: [ES, PS, DS, OS, CS, FS]
         T = np.array([
-            [0, 1, 0, 0, 0, 0],
-            [0, (1 - delta)*(1 - tau), delta, (1 - delta)*tau, 0, 0],
-            [0, (1 - tau), 0, tau, 0, 0],
-            [0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 1],
-            [kappa, 0, 0, 0, (1 - kappa), 0],
+            [0, 1, 0, 0, 0, 0],                                  # ES -> PS
+            [0, (1 - delta)*(1 - tau), delta, (1 - delta)*tau, 0, 0],  # PS
+            [0, (1 - tau), 0, tau, 0, 0],                        # DS
+            [0, 0, 0, 0, 1, 0],                                  # OS -> CS
+            [0, 0, 0, 0, 0, 1],                                  # CS -> FS
+            [kappa, 0, 0, 0, (1 - kappa), 0],                    # FS -> ES or CS
         ], dtype=float)
 
+        # --- Visit ratios and system setup
         V = visit_ratios_from_T(T)
         m = np.array([1, R, 1, 1, M, N], dtype=float)
 
-        # Service-rate scaling to match R/Shiny
-        mu = np.array([
-            mu_E * 2.0,   # ES
-            mu_P,         # PS
-            mu_D * 3.5,   # DS
-            mu_O * 3.5,   # OS
-            mu_C,         # CS
-            mu_F          # FS
-        ], dtype=float)
-        D = 1.0 / mu
-        # # Match R 'queueing' normalization
-        # D = D / np.sum(V * D)       # make total demand per visit = 1.0s
-        # D = D * 0.25                # scale to roughly 0.25s per cycle (empirical fit ≈ 2–8s total)
+        # --- Match R scaling (important!)
+        mu_E = mu_E * 2.0
+        mu_D = mu_D * 3.5
+        mu_O = mu_O * 3.5
+        mu_values = np.array([mu_E, mu_P, mu_D, mu_O, mu_C, mu_F], dtype=float)
+        D = 1.0 / mu_values
 
+        # --- MVA simulation
         X_hist, T_hist, R_hist, Q_hist = mva_schweitzer(J, V, D, m)
         jobs = np.arange(1, J + 1)
 
-        # Utilization and mean customers
-        util = np.clip((X_hist[-1] * V * D) / m, 0.0, 1.0)
-        Lk_final = Q_hist[-1]
+        # --- Utilization & mean customers (at final J)
+        util = (X_hist[-1] * V * D) / m
+        util = np.clip(util, 0.0, 1.0)
+        Lk = Q_hist[-1]  # mean customers per node
 
-        # Max J within SLA
+        # --- SLA analysis
         J_sla = int(np.max(jobs[T_hist <= SLA])) if np.any(T_hist <= SLA) else 0
 
-        # ---------------------------
-        # Throughput evolution
-        # ---------------------------
+        # -------------------------------------------------------------
+        # PLOTS
+        # -------------------------------------------------------------
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Throughput evolution")
             fig1, ax1 = plt.subplots(figsize=(6.5, 4.2))
-
-            # Blue smooth line (trend)
-            ax1.plot(jobs, X_hist, color="royalblue", linewidth=1.8, label="Throughput (smooth)")
-
-            # Black scatter points (measured)
-            ax1.scatter(jobs, X_hist, color="black", s=15, label="Measured points")
-
-            # Dotted asymptotic limit line
-            X_max = np.max(X_hist)
-            ax1.axhline(X_max, color="gray", linestyle=":", linewidth=1.5, label="Asymptotic limit")
-
+            ax1.plot(jobs, X_hist, 'b-', linewidth=2, label="Throughput")
+            ax1.scatter(jobs, X_hist, color='dodgerblue', s=12)
             ax1.set_xlabel("# Jobs")
             ax1.set_ylabel("Throughput (jobs/time unit)")
-            ax1.set_ylim(0, X_max * 1.1)
-            ax1.grid(True, linestyle="--", alpha=0.35)
             ax1.legend()
-
+            ax1.grid(True, linestyle="--", alpha=0.35)
             st.pyplot(fig1, clear_figure=True)
-            st.download_button(
-                "Download throughput plot (PNG)",
-                data=fig_to_bytes(fig1),
-                file_name="throughput_vs_jobs.png",
-                mime="image/png"
-            )
 
-        # ---------------------------
-        # Response time
-        # ---------------------------
         with col2:
             st.subheader("Mean time evolution")
             fig2, ax2 = plt.subplots(figsize=(6.5, 4.2))
-            ax2.plot(jobs, T_hist, marker='o', markersize=3, linewidth=1.5, label="Mean time")
+            ax2.plot(jobs, T_hist, 'b-', linewidth=2, label="Mean time")
+            ax2.scatter(jobs, T_hist, color='dodgerblue', s=12)
             ax2.axhline(SLA, linestyle="--", color="red", linewidth=2, label=f"SLA = {SLA:.1f}s")
-
-            # Label for SLA line
-            ax2.text(jobs[0], SLA, "SLA Limit", va="bottom", ha="left")
-
-            # Dynamic y-axis with 2-second ticks
-            ymax = float(np.ceil(np.max(T_hist) / 2.0) * 2.0)
-            ax2.set_ylim(0, ymax)
-            ax2.set_yticks(np.arange(0, ymax + 0.1, 2))
-
-            if J_sla > 0:
-                ax2.axvline(J_sla, color="gray", linestyle=":", label=f"Max J within SLA ≈ {J_sla}")
-
+            ax2.text(2, SLA + 0.1, "SLA Limit", color="red", fontsize=10)
             ax2.set_xlabel("# Jobs")
             ax2.set_ylabel("Mean time (s)")
-            ax2.grid(True, linestyle="--", alpha=0.35)
             ax2.legend()
+            ax2.grid(True, linestyle="--", alpha=0.35)
             st.pyplot(fig2, clear_figure=True)
-            st.download_button("Download response-time plot (PNG)", data=fig_to_bytes(fig2),
-                               file_name="response_time_vs_jobs.png", mime="image/png")
 
-        # ---------------------------
-        # Mean customers
-        # ---------------------------
-        st.subheader("Mean customers evolution")
-        fig_mc, ax_mc = plt.subplots(figsize=(13, 4.2))
-        ax_mc.bar(nodes, Lk_final)
-        for i, val in enumerate(Lk_final):
-            ax_mc.text(i, val + max(0.02 * np.max(Lk_final), 0.02), f"{val:.2f}", ha="center", va="bottom")
-        ax_mc.set_ylabel("Mean jobs")
-        ax_mc.grid(True, axis="y", linestyle="--", alpha=0.25)
-        st.pyplot(fig_mc, clear_figure=True)
-        st.download_button("Download mean-customers plot (PNG)", data=fig_to_bytes(fig_mc),
-                           file_name="mean_customers.png", mime="image/png")
-
-        # ---------------------------
-        # Utilization
-        # ---------------------------
-        st.subheader("Node Usage")
+        # --- Node utilization
+        st.subheader("Node Usage (ρ)")
         fig3, ax3 = plt.subplots(figsize=(13, 4.2))
-        ax3.bar(nodes, util)
-        ax3.set_ylim(0, 1.05)
+        nodes = ["Nd1 (ES)", "Nd2 (PS)", "Nd3 (DS)", "Nd4 (OS)", "Nd5 (CS)", "Nd6 (FS)"]
+        ax3.bar(nodes, util, color="skyblue", edgecolor="gray")
         for i, u in enumerate(util):
             ax3.text(i, min(1.02, u + 0.02), f"{u:.2f}", ha="center", va="bottom")
-        ax3.set_ylabel("Usage (ρ)")
+        ax3.set_ylim(0, 1.05)
+        ax3.set_ylabel("Utilization ρ")
         ax3.grid(True, axis="y", linestyle="--", alpha=0.25)
         st.pyplot(fig3, clear_figure=True)
-        st.download_button("Download utilization plot (PNG)", data=fig_to_bytes(fig3),
-                           file_name="node_utilization.png", mime="image/png")
 
+        # -------------------------------------------------------------
+        # SUMMARY TABLE (Comparable to R Output)
+        # -------------------------------------------------------------
+        st.subheader("Summary (Comparable to R QueueingModel)")
+        df = pd.DataFrame({
+            "Node": nodes,
+            "Servers (m_k)": m.astype(int),
+            "Service rate μ": np.round(mu_values, 3),
+            "Visit ratio V": np.round(V, 3),
+            "Service demand D (s)": np.round(D, 4),
+            "Utilization ρ": np.round(util, 4),
+            "Mean customers Lk": np.round(Lk, 4)
+        })
+        st.dataframe(df, use_container_width=True)
 with tab3:
     if not run_sim:
         st.info("Run a simulation to see the summary.")
