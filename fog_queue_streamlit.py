@@ -66,13 +66,13 @@ with st.sidebar:
     J = st.slider("Number of Jobs (J)", min_value=10, max_value=300, value=100, step=10)
     colA, colB = st.columns(2)
     with colA:
-        mu_E = st.number_input("μE (ES)", min_value=0.05, max_value=5.0, value=0.9, step=0.05)
-        mu_P = st.number_input("μP (PS)", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
-        mu_D = st.number_input("μD (DS)", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
+        mu_E = st.number_input("μE (ES) Service rate of the Entry Server", min_value=0.05, max_value=5.0, value=0.9, step=0.05)
+        mu_P = st.number_input("μP (PS) Service rate of every Processing Server", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
+        mu_D = st.number_input("μD (DS) Service rate of the Database Server", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
     with colB:
-        mu_O = st.number_input("μO (OS)", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
-        mu_F = st.number_input("μF (FS)", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
-        mu_C = st.number_input("μC (CS)", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
+        mu_O = st.number_input("μO (OS) Service rate of the Output Server", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
+        mu_F = st.number_input("μF (FS) Service rate of every fog Server", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
+        mu_C = st.number_input("μC (CS) Service rate of every Client Server", min_value=0.05, max_value=5.0, value=0.4, step=0.05)
 
     R = st.number_input("Processing servers R (PS)", min_value=1, max_value=200, value=10)
     N = st.number_input("Fog servers N (FS)", min_value=1, max_value=200, value=10)
@@ -82,7 +82,7 @@ with st.sidebar:
     tau   = st.slider("τ — Output server probability", 0.0, 1.0, 0.5, 0.05)
     kappa = st.slider("κ — Fog exit probability",    0.0, 1.0, 0.5, 0.05)
 
-    SLA = st.number_input("SLA (seconds)", min_value=0.1, max_value=30.0, value=4.0, step=0.1)
+    SLA = st.number_input("SLA (service-level agreement) (seconds)", min_value=0.1, max_value=30.0, value=4.0, step=0.1)
     run_sim = st.button("Calculate", use_container_width=True)
 
 nodes = ["ES","PS","DS","OS","CS","FS"]
