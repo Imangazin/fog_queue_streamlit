@@ -122,9 +122,9 @@ with tab2:
             mu_F          # FS
         ], dtype=float)
         D = 1.0 / mu
-        # Match R 'queueing' normalization
-        D = D / np.sum(V * D)       # make total demand per visit = 1.0s
-        D = D * 0.25                # scale to roughly 0.25s per cycle (empirical fit ≈ 2–8s total)
+        # # Match R 'queueing' normalization
+        # D = D / np.sum(V * D)       # make total demand per visit = 1.0s
+        # D = D * 0.25                # scale to roughly 0.25s per cycle (empirical fit ≈ 2–8s total)
 
         X_hist, T_hist, R_hist, Q_hist = mva_schweitzer(J, V, D, m)
         jobs = np.arange(1, J + 1)
