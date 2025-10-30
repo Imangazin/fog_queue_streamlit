@@ -148,6 +148,9 @@ with tab2:
             ax2.set_ylabel("Response time (s)")
             ax2.legend()
             ax2.grid(True, linestyle="--", alpha=0.35)
+            # Optional: focus/zoom and use 2-step ticks
+            ax2.set_ylim(0, 10)                      # show only 0–10 s range
+            ax2.set_yticks(np.arange(0, 10.1, 2))    # ticks at 0,2,4,6,8,10
             st.pyplot(fig2, clear_figure=True)
             st.download_button("Download response-time plot (PNG)", data=fig_to_bytes(fig2),
                                file_name="response_time_vs_jobs.png", mime="image/png")
