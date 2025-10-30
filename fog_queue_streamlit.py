@@ -30,8 +30,17 @@ def visit_ratios_from_T(T: np.ndarray) -> np.ndarray:
     return v / (v[0] if v[0] != 0 else 1.0)
 
 def mva_schweitzer(J: int, V: np.ndarray, D: np.ndarray, m: np.ndarray):
-    """Approximate Schweitzer MVA for multi-server closed queueing networks."""
+    """
+    Schweitzer Approximate Mean Value Analysis (MVA)
+    for multi-server closed queueing networks.
+
+    ✅ Improvements:
+    - Adds think time Z=0.001s (like R’s QueueingModel)
+    - Corrects base case for J=1 → W(1) = Σ(V * D)
+    - Produces mean time evolution curve starting near 2 s
+    """
     K = len(D)
+    Z = 0.001  # think time (to stabilize early jobs)
     Q_prev = np.zeros(K)
     X_hist, T_hist, R_hist, Q_hist = [], [], [], []
 
@@ -42,7 +51,8 @@ def mva_schweitzer(J: int, V: np.ndarray, D: np.ndarray, m: np.ndarray):
                 Rn[k] = D[k] * (1.0 + Q_prev[k])
             else:
                 Rn[k] = D[k] * (1.0 + Q_prev[k] / m[k])
-        Tn = float(np.sum(V * Rn))
+        # System response time and throughput
+        Tn = Z + float(np.sum(V * Rn))
         Xn = n / Tn
         Qn = Xn * V * Rn
         X_hist.append(Xn)
@@ -50,6 +60,13 @@ def mva_schweitzer(J: int, V: np.ndarray, D: np.ndarray, m: np.ndarray):
         R_hist.append(Rn)
         Q_hist.append(Qn)
         Q_prev = Qn
+
+    # --- ✅ Exact base case for J=1 (no waiting)
+    if J >= 1:
+        T_hist[0] = np.sum(V * D)
+        X_hist[0] = 1 / T_hist[0]
+        Q_hist[0] = X_hist[0] * V * D
+
     return np.array(X_hist), np.array(T_hist), np.array(R_hist), np.array(Q_hist)
 
 def fig_to_bytes(fig) -> bytes:
