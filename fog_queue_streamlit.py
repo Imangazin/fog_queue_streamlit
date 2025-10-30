@@ -141,19 +141,35 @@ with tab2:
         # J within SLA (use last J satisfying T_hist <= SLA)
         J_sla = int(np.max(jobs[T_hist <= SLA])) if np.any(T_hist <= SLA) else 0
 
-        # --- Throughput (R: points + smooth); no capacity/asymptote line ---
-        col1, col2 = st.columns(2)
+        # --- Throughput (R style: points + smooth + optional asymptotic line)
         with col1:
             st.subheader("Throughput evolution")
-            fig1, ax1 = plt.subplots(figsize=(6.5,4.2))
-            ax1.plot(jobs, X_hist, marker='o', markersize=3, linewidth=1.5, label="Throughput")
+            fig1, ax1 = plt.subplots(figsize=(6.5, 4.2))
+
+            # Blue smooth line (trend)
+            ax1.plot(jobs, X_hist, color="royalblue", linewidth=1.8, label="Throughput (smooth)")
+
+            # Black scatter points (measured)
+            ax1.scatter(jobs, X_hist, color="black", s=15, label="Measured points")
+
+            # Dotted asymptotic limit line (max throughput)
+            X_max = np.max(X_hist)
+            ax1.axhline(X_max, color="gray", linestyle=":", linewidth=1.5, label="Asymptotic limit")
+
+            # Labels, grid, legend
             ax1.set_xlabel("# Jobs")
             ax1.set_ylabel("Throughput (jobs/time unit)")
+            ax1.set_ylim(0, X_max * 1.1)
             ax1.grid(True, linestyle="--", alpha=0.35)
             ax1.legend()
+
             st.pyplot(fig1, clear_figure=True)
-            st.download_button("Download throughput plot (PNG)", data=fig_to_bytes(fig1),
-                               file_name="throughput_vs_jobs.png", mime="image/png")
+            st.download_button(
+                "Download throughput plot (PNG)",
+                data=fig_to_bytes(fig1),
+                file_name="throughput_vs_jobs.png",
+                mime="image/png"
+            )
 
         # --- Response time (R: dashed red SLA + label) ---
         with col2:
