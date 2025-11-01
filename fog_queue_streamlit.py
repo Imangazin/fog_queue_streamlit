@@ -86,12 +86,12 @@ with st.sidebar:
     colA, colB = st.columns(2)
     with colA:
         mu_E = st.number_input("μE Service rate of the Entry Server(ES)", 0.05, 5.0, 0.9, 0.05)
-        mu_P = st.number_input("μP (PS)", 0.05, 5.0, 0.4, 0.05)
-        mu_D = st.number_input("μD (DS)", 0.05, 5.0, 0.4, 0.05)
+        mu_P = st.number_input("μP Service rate of every Processing Server(PS)", 0.05, 5.0, 0.4, 0.05)
+        mu_D = st.number_input("μD Service rate of the Database Server(DS)", 0.05, 5.0, 0.4, 0.05)
     with colB:
-        mu_O = st.number_input("μO (OS)", 0.05, 5.0, 0.4, 0.05)
-        mu_F = st.number_input("μF (FS)", 0.05, 5.0, 0.4, 0.05)
-        mu_C = st.number_input("μC (CS)", 0.05, 5.0, 0.4, 0.05)
+        mu_O = st.number_input("μO Service rate of the Database Server(OS)", 0.05, 5.0, 0.4, 0.05)
+        mu_F = st.number_input("μF Service rate of every fog Server(FS)", 0.05, 5.0, 0.4, 0.05)
+        mu_C = st.number_input("μC Service rate of every Client Server(CS)", 0.05, 5.0, 0.4, 0.05)
 
     R = st.number_input("Processing servers R (PS)", 1, 200, 10)
     N = st.number_input("Fog servers N (FS)", 1, 200, 10)
