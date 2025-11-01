@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Fog Computing Queueing Theory Model (Streamlit)
-Ported from R Shiny version using Schweitzer MVA approximation.
+Fog Computing Queueing Theory Model (Streamlit app)
 """
 
 import io
@@ -29,6 +28,9 @@ def visit_ratios_from_T(T: np.ndarray) -> np.ndarray:
     v = np.abs(v)
     return v / (v[0] if v[0] != 0 else 1.0)
 
+#-------------------------------------------------------------
+# Uses Schweitzer MVA approximation to evaluate the closed queuing network’s performance metrics.
+#-------------------------------------------------------------
 def mva_schweitzer(J: int, V: np.ndarray, D: np.ndarray, m: np.ndarray):
     """
     Schweitzer Approximate Mean Value Analysis (MVA)
@@ -61,7 +63,6 @@ def mva_schweitzer(J: int, V: np.ndarray, D: np.ndarray, m: np.ndarray):
         Q_hist.append(Qn)
         Q_prev = Qn
 
-    # --- ✅ Exact base case for J=1 (no waiting)
     if J >= 1:
         T_hist[0] = np.sum(V * D)
         X_hist[0] = 1 / T_hist[0]
@@ -84,7 +85,7 @@ with st.sidebar:
     J = st.slider("Number of Jobs (J)", 10, 300, 100, step=10)
     colA, colB = st.columns(2)
     with colA:
-        mu_E = st.number_input("μE (ES)", 0.05, 5.0, 0.9, 0.05)
+        mu_E = st.number_input("μE Service rate of the Entry Server(ES)", 0.05, 5.0, 0.9, 0.05)
         mu_P = st.number_input("μP (PS)", 0.05, 5.0, 0.4, 0.05)
         mu_D = st.number_input("μD (DS)", 0.05, 5.0, 0.4, 0.05)
     with colB:
@@ -120,7 +121,7 @@ if not run_sim:
     with tab2:
         st.info("Adjust inputs in the sidebar and click **Run Simulation** to generate results.")
 else:
-    # Routing matrix
+    # Routing matrix 
     T = np.array([
         [0, 1, 0, 0, 0, 0],
         [0, (1 - delta)*(1 - tau), delta, (1 - delta)*tau, 0, 0],
