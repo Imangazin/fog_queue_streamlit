@@ -219,8 +219,8 @@ else:
             df_nodes = pd.DataFrame({
                 "Node": nodes,
                 "Servers (m_k)": m.astype(int),
-                "Service rate μ": np.round(mu, 3),
-                "Visit ratio V": np.round(V, 3),
+                "Service rate (mu)": np.round(mu, 3),
+                "Visit ratio (V)": np.round(V, 3),
                 "Service demand D (s)": np.round(D, 3),
                 "Mean customers Lk": np.round(Lk_final, 3),
                 "Mean time Wk (s)": np.round(Wk_final, 3),
