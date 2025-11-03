@@ -199,54 +199,54 @@ else:
     # ------------------------------------------------------------
     # Summary (tab3)
     # ------------------------------------------------------------
-with tab3:
-    if not run_sim:
-        st.info("Run a simulation to see the summary.")
-    else:
-        st.subheader("Summary (at final population J)")
+    with tab3:
+        if not run_sim:
+            st.info("Run a simulation to see the summary.")
+        else:
+            st.subheader("Summary (at final population J)")
 
-        # Compute per-node metrics
-        Lk_final = Q_hist[-1]                     # Mean number of customers at each node
-        Wk_final = R_hist[-1]                     # Mean time at each node
-        Xk_final = X_hist[-1] * V                 # Throughput at each node
-        ROk_final = (X_hist[-1] * V * D) / m      # Utilization per node (same as ρ)
+            # Compute per-node metrics
+            Lk_final = Q_hist[-1]                     # Mean number of customers at each node
+            Wk_final = R_hist[-1]                     # Mean time at each node
+            Xk_final = X_hist[-1] * V                 # Throughput at each node
+            ROk_final = (X_hist[-1] * V * D) / m      # Utilization per node (same as ρ)
 
-        # Network-level metrics
-        L_total = np.sum(Lk_final)
-        W_total = T_hist[-1]
-        X_total = X_hist[-1]
+            # Network-level metrics
+            L_total = np.sum(Lk_final)
+            W_total = T_hist[-1]
+            X_total = X_hist[-1]
 
-        df_nodes = pd.DataFrame({
-            "Node": nodes,
-            "Servers (m_k)": m.astype(int),
-            "Service rate μ": np.round(mu, 3),
-            "Visit ratio V": np.round(V, 3),
-            "Service demand D (s)": np.round(D, 3),
-            "Mean customers Lk": np.round(Lk_final, 3),
-            "Mean time Wk (s)": np.round(Wk_final, 3),
-            "Throughput Xk (jobs/s)": np.round(Xk_final, 3),
-            "Utilization ROk": np.round(ROk_final, 3)
-        })
+            df_nodes = pd.DataFrame({
+                "Node": nodes,
+                "Servers (m_k)": m.astype(int),
+                "Service rate μ": np.round(mu, 3),
+                "Visit ratio V": np.round(V, 3),
+                "Service demand D (s)": np.round(D, 3),
+                "Mean customers Lk": np.round(Lk_final, 3),
+                "Mean time Wk (s)": np.round(Wk_final, 3),
+                "Throughput Xk (jobs/s)": np.round(Xk_final, 3),
+                "Utilization ROk": np.round(ROk_final, 3)
+            })
 
-        df_network = pd.DataFrame({
-            "Metric": ["L", "W", "X"],
-            "Description": [
-                "Mean number of customers of the network",
-                "Mean time spent in the network (s)",
-                "Total throughput of the network (jobs/s)"
-            ],
-            "Value": [np.round(L_total, 3), np.round(W_total, 3), np.round(X_total, 3)]
-        })
+            df_network = pd.DataFrame({
+                "Metric": ["L", "W", "X"],
+                "Description": [
+                    "Mean number of customers of the network",
+                    "Mean time spent in the network (s)",
+                    "Total throughput of the network (jobs/s)"
+                ],
+                "Value": [np.round(L_total, 3), np.round(W_total, 3), np.round(X_total, 3)]
+            })
 
-        st.markdown("### Network-level Metrics")
-        st.table(df_network)
+            st.markdown("### Network-level Metrics")
+            st.table(df_network)
 
-        st.markdown("### Node-level Metrics")
-        st.dataframe(df_nodes, use_container_width=True)
+            st.markdown("### Node-level Metrics")
+            st.dataframe(df_nodes, use_container_width=True)
 
-        st.download_button(
-            "Download node-level summary (CSV)",
-            data=df_nodes.to_csv(index=False).encode("utf-8"),
-            file_name="fog_model_node_summary.csv",
-            mime="text/csv"
-        )
+            st.download_button(
+                "Download node-level summary (CSV)",
+                data=df_nodes.to_csv(index=False).encode("utf-8"),
+                file_name="fog_model_node_summary.csv",
+                mime="text/csv"
+            )
