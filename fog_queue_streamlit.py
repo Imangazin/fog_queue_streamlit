@@ -163,7 +163,7 @@ else:
             st.subheader("Throughput evolution")
             fig1, ax1 = plt.subplots(figsize=(6.5, 4.2))
             ax1.plot(jobs, X_hist, color='royalblue', linewidth=2, label="Throughput (line)")
-            ax1.scatter(jobs, X_hist, color='orange', s=20, label="Data points")
+            ax1.scatter(jobs, X_hist, color='orange', s=20, label="Job")
             ax1.set_xlabel("# Jobs")
             ax1.set_ylabel("Throughput (jobs/time unit)")
             ax1.legend()
